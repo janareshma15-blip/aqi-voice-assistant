@@ -1,28 +1,63 @@
+janani Rajkumar <rmjanani2004@gmail.com>
+	
+13:24 (4 minutes ago)
+	
+	
+to me
+
+Do these in two parts: GitHub for code and Docker Hub for vLLM image.
+
+
+1. Push your AQI project code to GitHub
+
+
+Go to your project folder
+
+cd ~/Projects/AQI/aqi-assistant
+
+Check what is inside
+
+ls -la
+
+Initialize git if not already done
+
+git init
+
+Create a 
+.gitignore
+
+
+Use this so you do not push caches, audio files, env files, or big model artifacts.
+
+cat > .gitignore << 'EOF'
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-.venv/
-venv/
-env/
-
-*.wav
-*.mp3
-static/audio/
+*.swp
+*.swo
 
 .env
 .env.*
+.venv/
+venv/
+
+static/audio/
+*.wav
+*.mp3
+
+.cache/
+.pytest_cache/
+.mypy_cache/
+
+*.log
+
+runtime/
+models/
+*.gguf
+mmproj*.gguf
+
+node_modules/
 
 .DS_Store
-
-models/
-checkpoints/
-*.onnx
-*.bin
-*.safetensors
-*.pt
-*.pth
-
-.idea/
-.vscode/
+EOF
