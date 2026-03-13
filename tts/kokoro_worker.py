@@ -9,7 +9,6 @@ RUNTIME_DIR = BASE_DIR / "runtime" / "kokoro-runtime"
 MODEL_FILE = RUNTIME_DIR / "kokoro-v1.0.onnx"
 VOICES_FILE = RUNTIME_DIR / "voices-v1.0.bin"
 
-
 def main():
     if len(sys.argv) < 3:
         print("Usage: python kokoro_worker.py <text> <output_wav>")
@@ -38,14 +37,11 @@ def main():
             speed=1.0,
             lang="en-us"
         )
-
         sf.write(output_wav, audio, sr)
         print(f"Saved: {output_wav}")
-
     except Exception as e:
         print(f"Kokoro TTS failed: {e}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

@@ -7,7 +7,6 @@ from transformers import VitsModel, AutoTokenizer
 
 MODEL_PATH = Path(os.environ.get("MMS_TAMIL_MODEL_DIR", "")).resolve()
 
-
 def main():
     if len(sys.argv) < 3:
         print("Usage: python mms_tamil_worker.py <text> <output_wav>")
@@ -47,7 +46,6 @@ def main():
     except Exception as e:
         print(f"MMS Tamil TTS failed: {e}")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
