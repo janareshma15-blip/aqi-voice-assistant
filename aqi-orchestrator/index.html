@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AQI AI Assistant</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --panel-2: #182238;
+      --border: #2a3757;
+      --text: #e8eefc;
+      --muted: #a9b6d3;
+      --accent: #6ea8fe;
+      --accent-2: #7ef0c2;
+      --danger: #ff8a8a;
+      --warn: #ffd479;
+      --user: #183255;
+      --bot: #173727;
+      --info: #222c44;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(110,168,254,0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(126,240,194,0.08), transparent 25%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1100px;
+      margin: 28px auto;
+      padding: 0 18px 28px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .brand, .status-panel, .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .brand { padding: 18px 20px; }
+    .title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { color: var(--muted); font-size: 14px; }
+
+    .status-panel {
+      min-width: 280px;
+      padding: 16px 18px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--warn);
+    }
+
+    .dot.connected { background: var(--accent-2); }
+    .dot.disconnected { background: var(--danger); }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+    }
+
+    .sidebar {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button, select {
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 11px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .primary { border-color: rgba(110,168,254,0.45); }
+    .success { border-color: rgba(126,240,194,0.4); }
+    .danger { border-color: rgba(255,138,138,0.4); }
+
+    .meta-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .chat-panel {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto auto;
+      min-height: 780px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 16px 18px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-header h3 {
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    .panel-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .live-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 14px 16px 0;
+    }
+
+    .live-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      min-height: 82px;
+      padding: 12px;
+    }
+
+    .live-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .live-content {
+      font-size: 14px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .chat {
+      padding: 16px;
+      overflow-y: auto;
+      min-height: 320px;
+    }
+
+    .msg {
+      margin-bottom: 12px;
+      border-radius: 16px;
+      padding: 12px 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.user { background: var(--user); }
+    .msg.bot { background: var(--bot); }
+    .msg.info { background: var(--info); color: var(--muted); }
+
+    .msg strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #ffffff;
+    }
+
+    .msg pre {
+      margin: 10px 0 0;
+      background: #09101d;
+      color: #edf3ff;
+      padding: 12px;
+      border-radius: 12px;
+      overflow-x: auto;
+      border: 1px solid #203154;
+    }
+
+    .composer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .audio-wrap {
+      padding: 0 16px 16px;
+    }
+
+    audio { width: 100%; }
+
+    .footer-note {
+      padding: 0 16px 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .select-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .label-mini {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 920px) {
+      .grid { grid-template-columns: 1fr; }
+      .topbar { grid-template-columns: 1fr; }
+      .live-wrap { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="title">AQI AI Assistant</div>
+        <div class="subtitle">WebSocket-only messaging UI</div>
+      </div>
+
+      <div class="status-panel">
+        <div class="status-row">
+          <div id="statusDot" class="dot disconnected"></div>
+          <div id="statusText">Disconnected</div>
+        </div>
+        <div class="small" id="sessionText">Session ID: loading...</div>
+        <div class="small" id="retryText">Reconnect: idle</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="sidebar card">
+        <div>
+          <div class="section-title">Connection</div>
+          <div class="button-group">
+            <button id="connectBtn" class="primary">Connect</button>
+            <button id="reconnectBtn">Reconnect</button>
+            <button id="resetSessionBtn">New Session</button>
+            <button id="clearBtn" class="danger" disabled>Clear Chat</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title">Voice</div>
+          <div class="button-group">
+            <button id="startBtn" class="success" disabled>Start Mic</button>
+            <button id="stopBtn" class="danger" disabled>Stop Mic</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title">Modes</div>
+          <div class="select-stack">
+            <div>
+              <div class="label-mini">Voice Input Mode</div>
+              <select id="voiceModeSelect">
+                <option value="auto">Auto</option>
+                <option value="en">English</option>
+                <option value="ta">Tamil</option>
+              </select>
+            </div>
+            <div>
+              <div class="label-mini">Reply Language</div>
+              <select id="replyLangSelect">
+                <option value="auto">Auto</option>
+                <option value="en">English</option>
+                <option value="ta">Tamil</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title">Info</div>
+          <div class="meta-box">
+            Backend WS URL:
+            <div id="wsUrlText" style="margin-top:6px; color: var(--text); word-break: break-all;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-panel card">
+        <div class="panel-header">
+          <h3>Conversation</h3>
+          <p>Use Voice Input Mode to force English or Tamil ASR when needed.</p>
+        </div>
+
+        <div class="live-wrap">
+          <div class="live-box">
+            <div class="live-label">Live transcript</div>
+            <div id="liveTranscript" class="live-content"></div>
+          </div>
+          <div class="live-box">
+            <div class="live-label">Streaming reply</div>
+            <div id="liveReply" class="live-content"></div>
+          </div>
+        </div>
+
+        <div id="chat" class="chat"></div>
+
+        <div class="composer">
+          <div class="input-row">
+            <input id="inputBox" type="text" placeholder="Type your message..." />
+            <button id="sendBtn" class="primary" disabled>Send</button>
+          </div>
+        </div>
+
+        <div class="audio-wrap">
+          <audio id="audioPlayer" controls></audio>
+        </div>
+
+        <div class="footer-note">
+          Session id is auto-generated and persisted in localStorage.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WS_SCHEME = location.protocol === "https:" ? "wss" : "ws";
+    const WS_HOST = location.host || "127.0.0.1:9002";
+    const WS_BASE = `${WS_SCHEME}://${WS_HOST}/ws/voice`;
+
+    const AUTO_RECONNECT_ENABLED = true;
+    const AUTO_RECONNECT_MAX_ATTEMPTS = 10;
+    const AUTO_RECONNECT_BASE_DELAY_MS = 1200;
+
+    let sessionId = localStorage.getItem("aqi_ai_session_id");
+    if (!sessionId) {
+      sessionId = (window.crypto && crypto.randomUUID)
+        ? "user_" + crypto.randomUUID()
+        : "user_" + Math.random().toString(36).slice(2);
+      localStorage.setItem("aqi_ai_session_id", sessionId);
+    }
+
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const retryText = document.getElementById("retryText");
+    const sessionText = document.getElementById("sessionText");
+    const wsUrlText = document.getElementById("wsUrlText");
+
+    const chatBox = document.getElementById("chat");
+    const liveTranscript = document.getElementById("liveTranscript");
+    const liveReply = document.getElementById("liveReply");
+    const inputBox = document.getElementById("inputBox");
+    const audioPlayer = document.getElementById("audioPlayer");
+
+    const connectBtn = document.getElementById("connectBtn");
+    const reconnectBtn = document.getElementById("reconnectBtn");
+    const resetSessionBtn = document.getElementById("resetSessionBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    const voiceModeSelect = document.getElementById("voiceModeSelect");
+    const replyLangSelect = document.getElementById("replyLangSelect");
+
+    let ws = null;
+    let isConnected = false;
+    let reconnectAttempts = 0;
+    let reconnectTimer = null;
+    let manualClose = false;
+
+    let recording = false;
+    let audioContext = null;
+    let mediaStream = null;
+    let sourceNode = null;
+    let processorNode = null;
+
+    let audioQueue = [];
+    let audioPlaying = false;
+    let currentObjectUrl = null;
+
+    function getWsUrl() {
+      return `${WS_BASE}/${sessionId}`;
+    }
+
+    function renderSessionInfo() {
+      sessionText.textContent = `Session ID: ${sessionId}`;
+      wsUrlText.textContent = getWsUrl();
+    }
+
+    function setConnectionState(state, extra = "") {
+      statusDot.classList.remove("connected", "disconnected");
+
+      if (state === "connected") {
+        statusDot.classList.add("connected");
+        statusText.textContent = "Connected";
+      } else if (state === "connecting") {
+        statusText.textContent = "Connecting...";
+      } else {
+        statusDot.classList.add("disconnected");
+        statusText.textContent = "Disconnected";
+      }
+
+      retryText.textContent = extra || "Reconnect: idle";
+    }
+
+    function updateButtons() {
+      connectBtn.disabled = isConnected;
+      sendBtn.disabled = !isConnected;
+      clearBtn.disabled = !isConnected;
+      startBtn.disabled = !isConnected || recording;
+      stopBtn.disabled = !recording;
+    }
+
+    function escapeHtml(str) {
+      return (str || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function renderMessageContent(text) {
+      const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+      let html = "";
+      let lastIndex = 0;
+      let match;
+
+      while ((match = codeBlockRegex.exec(text)) !== null) {
+        const fullMatch = match[0];
+        const lang = match[1] || "";
+        const code = match[2];
+        const start = match.index;
+        const end = start + fullMatch.length;
+
+        const before = text.slice(lastIndex, start);
+        if (before) {
+          html += `<div>${escapeHtml(before).replace(/\n/g, "<br>")}</div>`;
+        }
+
+        html += `<pre><code class="language-${escapeHtml(lang)}">${escapeHtml(code)}</code></pre>`;
+        lastIndex = end;
+      }
+
+      const remaining = text.slice(lastIndex);
+      if (remaining) {
+        html += `<div>${escapeHtml(remaining).replace(/\n/g, "<br>")}</div>`;
+      }
+
+      return html || `<div>${escapeHtml(text).replace(/\n/g, "<br>")}</div>`;
+    }
+
+    function addMessage(title, text, cls = "info") {
+      const div = document.createElement("div");
+      div.className = "msg " + cls;
+      div.innerHTML = `<strong>${escapeHtml(title)}</strong>${renderMessageContent(text)}`;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function clearLiveBoxes() {
+      liveTranscript.textContent = "";
+      liveReply.textContent = "";
+    }
+
+    function base64ToObjectUrl(base64, mimeType = "audio/wav") {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: mimeType });
+      return URL.createObjectURL(blob);
+    }
+
+    async function playNextQueuedAudio() {
+      if (audioPlaying || audioQueue.length === 0) return;
+
+      audioPlaying = true;
+      const nextItem = audioQueue.shift();
+
+      try {
+        if (currentObjectUrl) {
+          URL.revokeObjectURL(currentObjectUrl);
+        }
+        currentObjectUrl = nextItem.url;
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+        audioPlayer.src = currentObjectUrl;
+        await audioPlayer.play();
+      } catch (err) {
+        console.error("Audio playback failed:", err);
+        audioPlaying = false;
+      }
+    }
+
+    audioPlayer.addEventListener("ended", () => {
+      audioPlaying = false;
+      playNextQueuedAudio();
+    });
+
+    audioPlayer.addEventListener("error", () => {
+      audioPlaying = false;
+      playNextQueuedAudio();
+    });
+
+    function downsampleBuffer(float32Array, inputSampleRate, outputSampleRate) {
+      if (outputSampleRate === inputSampleRate) return float32Array;
+
+      const sampleRateRatio = inputSampleRate / outputSampleRate;
+      const newLength = Math.round(float32Array.length / sampleRateRatio);
+      const result = new Float32Array(newLength);
+
+      let offsetResult = 0;
+      let offsetBuffer = 0;
+
+      while (offsetResult < result.length) {
+        const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
+        let accum = 0;
+        let count = 0;
+
+        for (let i = offsetBuffer; i < nextOffsetBuffer && i < float32Array.length; i++) {
+          accum += float32Array[i];
+          count++;
+        }
+
+        result[offsetResult] = count > 0 ? accum / count : 0;
+        offsetResult++;
+        offsetBuffer = nextOffsetBuffer;
+      }
+
+      return result;
+    }
+
+    function floatTo16BitPCM(float32Array) {
+      const buffer = new ArrayBuffer(float32Array.length * 2);
+      const view = new DataView(buffer);
+
+      let offset = 0;
+      for (let i = 0; i < float32Array.length; i++, offset += 2) {
+        let s = Math.max(-1, Math.min(1, float32Array[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      }
+      return buffer;
+    }
+
+    async function startMic() {
+      if (recording) return;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        addMessage("Assistant", "WebSocket is not connected.", "bot");
+        return;
+      }
+
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({
+          sampleRate: 16000
+        });
+
+        sourceNode = audioContext.createMediaStreamSource(mediaStream);
+        processorNode = audioContext.createScriptProcessor(2048, 1, 1);
+
+        processorNode.onaudioprocess = (event) => {
+          if (!recording || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+          const input = event.inputBuffer.getChannelData(0);
+          const downsampled = downsampleBuffer(input, audioContext.sampleRate, 16000);
+          const pcm16 = floatTo16BitPCM(downsampled);
+          ws.send(pcm16);
+        };
+
+        sourceNode.connect(processorNode);
+        processorNode.connect(audioContext.destination);
+
+        recording = true;
+        updateButtons();
+        addMessage("System", "Microphone started.", "info");
+      } catch (err) {
+        console.error("Mic start failed:", err);
+        addMessage("Assistant", "Could not start microphone. Check browser mic permission.", "bot");
+      }
+    }
+
+    function stopMicLocal(update = true) {
+      recording = false;
+
+      if (processorNode) {
+        processorNode.disconnect();
+        processorNode = null;
+      }
+      if (sourceNode) {
+        sourceNode.disconnect();
+        sourceNode = null;
+      }
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+      }
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+
+      if (update) updateButtons();
+    }
+
+    function stopMic() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "stop_voice" }));
+      }
+      stopMicLocal(true);
+      addMessage("System", "Microphone stopped.", "info");
+    }
+
+    function clearReconnectTimer() {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    }
+
+    function scheduleReconnect() {
+      if (!AUTO_RECONNECT_ENABLED || manualClose) return;
+      if (reconnectAttempts >= AUTO_RECONNECT_MAX_ATTEMPTS) {
+        setConnectionState("disconnected", "Reconnect: max attempts reached");
+        return;
+      }
+
+      reconnectAttempts += 1;
+      const delay = AUTO_RECONNECT_BASE_DELAY_MS * reconnectAttempts;
+      setConnectionState("disconnected", `Reconnect: retry ${reconnectAttempts}/${AUTO_RECONNECT_MAX_ATTEMPTS} in ${Math.round(delay / 1000)}s`);
+
+      clearReconnectTimer();
+      reconnectTimer = setTimeout(() => {
+        connectWebSocket(true);
+      }, delay);
+    }
+
+    function applyModeSelectorsFromConfig(msg) {
+      if (msg.voice_mode) voiceModeSelect.value = msg.voice_mode;
+      if (msg.reply_lang) replyLangSelect.value = msg.reply_lang;
+    }
+
+    function connectWebSocket(isRetry = false) {
+      clearReconnectTimer();
+
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
+
+      manualClose = false;
+      setConnectionState("connecting", isRetry ? "Reconnect: trying again..." : "Reconnect: idle");
+
+      ws = new WebSocket(getWsUrl());
+      ws.binaryType = "arraybuffer";
+
+      ws.onopen = () => {
+        isConnected = true;
+        reconnectAttempts = 0;
+        setConnectionState("connected", "Reconnect: idle");
+        updateButtons();
+        addMessage("System", `Connected to ${getWsUrl()}`, "info");
+
+        ws.send(JSON.stringify({ type: "set_voice_mode", mode: voiceModeSelect.value }));
+        ws.send(JSON.stringify({ type: "set_reply_lang", mode: replyLangSelect.value }));
+      };
+
+      ws.onmessage = (event) => {
+        let msg;
+        try {
+          msg = JSON.parse(event.data);
+        } catch {
+          return;
+        }
+
+        if (msg.type === "info") {
+          retryText.textContent = msg.text || "Reconnect: idle";
+        } else if (msg.type === "config") {
+          applyModeSelectorsFromConfig(msg);
+        } else if (msg.type === "typed_user") {
+          addMessage("You", msg.text || "", "user");
+          liveReply.textContent = "";
+        } else if (msg.type === "partial_transcript") {
+          liveTranscript.textContent = msg.text || "";
+        } else if (msg.type === "final_transcript") {
+          liveTranscript.textContent = msg.text || "";
+          addMessage("You (voice)", msg.text || "", "user");
+          liveReply.textContent = "";
+        } else if (msg.type === "llm_delta") {
+          liveReply.textContent += msg.text || "";
+        } else if (msg.type === "llm_done") {
+          addMessage("Assistant", msg.text || liveReply.textContent || "", "bot");
+          liveReply.textContent = "";
+        } else if (msg.type === "tts_sentence_ready") {
+          if (msg.audio_base64) {
+            const blobUrl = base64ToObjectUrl(msg.audio_base64, msg.mime_type || "audio/wav");
+            audioQueue.push({ url: blobUrl });
+            playNextQueuedAudio();
+          }
+        } else if (msg.type === "cleared") {
+          chatBox.innerHTML = "";
+          clearLiveBoxes();
+          audioQueue = [];
+          audioPlaying = false;
+          audioPlayer.pause();
+          audioPlayer.currentTime = 0;
+          audioPlayer.src = "";
+          addMessage("System", "Session cleared.", "info");
+        } else if (msg.type === "discarded_voice") {
+          addMessage("System", msg.text || "discarded short or unclear speech", "info");
+        } else if (msg.type === "error") {
+          addMessage("Assistant", msg.text || "Error", "bot");
+        }
+      };
+
+      ws.onclose = () => {
+        isConnected = false;
+        updateButtons();
+        stopMicLocal(false);
+
+        if (!manualClose) {
+          scheduleReconnect();
+        } else {
+          setConnectionState("disconnected", "Reconnect: stopped");
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+      };
+    }
+
+    function disconnectWebSocket() {
+      manualClose = true;
+      clearReconnectTimer();
+      if (ws) {
+        try { ws.close(); } catch {}
+      }
+      isConnected = false;
+      updateButtons();
+      setConnectionState("disconnected", "Reconnect: stopped");
+    }
+
+    function reconnectWebSocket() {
+      disconnectWebSocket();
+      setTimeout(() => {
+        manualClose = false;
+        connectWebSocket(true);
+      }, 300);
+    }
+
+    function sendTextMessage() {
+      const text = inputBox.value.trim();
+      if (!text) return;
+
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        addMessage("Assistant", "WebSocket is not connected.", "bot");
+        return;
+      }
+
+      ws.send(JSON.stringify({
+        type: "text_chat",
+        text: text
+      }));
+
+      inputBox.value = "";
+      inputBox.focus();
+    }
+
+    function clearSession() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ type: "clear_session" }));
+    }
+
+    function resetSession() {
+      localStorage.removeItem("aqi_ai_session_id");
+      sessionId = (window.crypto && crypto.randomUUID)
+        ? "user_" + crypto.randomUUID()
+        : "user_" + Math.random().toString(36).slice(2);
+      localStorage.setItem("aqi_ai_session_id", sessionId);
+      renderSessionInfo();
+      reconnectWebSocket();
+    }
+
+    function sendVoiceMode() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({
+        type: "set_voice_mode",
+        mode: voiceModeSelect.value
+      }));
+    }
+
+    function sendReplyLang() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({
+        type: "set_reply_lang",
+        mode: replyLangSelect.value
+      }));
+    }
+
+    connectBtn.onclick = () => connectWebSocket(false);
+    reconnectBtn.onclick = reconnectWebSocket;
+    resetSessionBtn.onclick = resetSession;
+    clearBtn.onclick = clearSession;
+    startBtn.onclick = startMic;
+    stopBtn.onclick = stopMic;
+    sendBtn.onclick = sendTextMessage;
+
+    voiceModeSelect.addEventListener("change", sendVoiceMode);
+    replyLangSelect.addEventListener("change", sendReplyLang);
+
+    inputBox.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendTextMessage();
+    });
+
+    window.addEventListener("beforeunload", () => {
+      manualClose = true;
+      clearReconnectTimer();
+      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    });
+
+    renderSessionInfo();
+    updateButtons();
+    setConnectionState("disconnected", "Reconnect: idle");
+  </script>
+</body>
+</html>

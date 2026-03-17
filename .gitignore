@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+shared/runtime/hf-cache/
+shared/runtime/tmp_audio/
+shared/runtime/kokoro-runtime/

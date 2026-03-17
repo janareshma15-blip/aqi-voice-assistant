@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+numpy
+soundfile
+faster-whisper
+pydantic

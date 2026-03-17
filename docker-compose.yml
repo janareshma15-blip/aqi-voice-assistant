@@ -1,0 +1,106 @@
+services:
+  gemma-vllm:
+    image: vllm/vllm-openai:cu130-nightly
+    container_name: gemma3-12b-gguf
+    command: >
+      --model /models/gemma-3-12b-it-Q4_K_S.gguf
+      --served-model-name gemma-3-12b-it-text
+      --tokenizer google/gemma-3-12b-it
+      --hf-config-path google/gemma-3-12b-it
+      --load-format gguf
+      --dtype float32
+      --max-model-len 512
+      --max-num-seqs 1
+      --max-num-batched-tokens 256
+      --language-model-only
+      --skip-mm-profiling
+      --enforce-eager
+      --attention-backend FLEX_ATTENTION
+    environment:
+      PYTORCH_CUDA_ALLOC_CONF: "expandable_segments:True"
+    ports:
+      - "9005:8000"
+    volumes:
+      - /home/URK22AI1081/Quantized_model/gemma3-12b-gguf:/models
+      - /home/URK22AI1081/.cache/huggingface:/root/.cache/huggingface
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: ["gpu"]
+    restart: unless-stopped
+
+  whisper-asr:
+    build: ./whisper-asr
+    container_name: whisper-asr
+    ports:
+      - "9010:9010"
+    environment:
+      WHISPER_MODEL_SIZE: ${WHISPER_MODEL_SIZE}
+      WHISPER_DEVICE: ${WHISPER_DEVICE}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE}
+    volumes:
+      - ./shared/runtime/hf-cache:/app/runtime/hf-cache
+    restart: unless-stopped
+
+  ai4bharat-asr:
+    build: ./ai4bharat-asr
+    container_name: ai4bharat-asr
+    ports:
+      - "9011:9011"
+    environment:
+      AI4BHARAT_MODEL_NAME: ${AI4BHARAT_MODEL_NAME}
+      HF_TOKEN: ${HF_TOKEN}
+      HUGGINGFACE_HUB_TOKEN: ${HF_TOKEN}
+    volumes:
+      - ./shared/runtime/hf-cache:/app/runtime/hf-cache
+    restart: unless-stopped
+
+  kokoro-tts:
+    build: ./kokoro-tts
+    container_name: kokoro-tts
+    ports:
+      - "9020:9020"
+    environment:
+      KOKORO_HF_REPO: ${KOKORO_HF_REPO}
+    volumes:
+      - ./shared/runtime/kokoro-runtime:/app/runtime/kokoro-runtime
+      - ./shared/runtime/hf-cache:/app/runtime/hf-cache
+      - ./shared/runtime/tmp_audio:/app/runtime/tmp_audio
+    restart: unless-stopped
+
+  mms-tamil-tts:
+    build: ./mms-tamil-tts
+    container_name: mms-tamil-tts
+    ports:
+      - "9021:9021"
+    environment:
+      MMS_TAMIL_HF_REPO: ${MMS_TAMIL_HF_REPO}
+    volumes:
+      - ./shared/runtime/hf-cache:/app/runtime/hf-cache
+      - ./shared/runtime/tmp_audio:/app/runtime/tmp_audio
+    restart: unless-stopped
+
+  aqi-orchestrator:
+    build: ./aqi-orchestrator
+    container_name: aqi-orchestrator
+    ports:
+      - "9002:9002"
+    environment:
+      APP_PORT: ${APP_PORT}
+      VLLM_BASE_URL: ${VLLM_BASE_URL}
+      WHISPER_ASR_URL: ${WHISPER_ASR_URL}
+      AI4BHARAT_ASR_URL: ${AI4BHARAT_ASR_URL}
+      KOKORO_TTS_URL: ${KOKORO_TTS_URL}
+      MMS_TAMIL_TTS_URL: ${MMS_TAMIL_TTS_URL}
+      MAX_RESPONSE_TOKENS: ${MAX_RESPONSE_TOKENS}
+    volumes:
+      - ./shared/runtime/tmp_audio:/app/runtime/tmp_audio
+    depends_on:
+      - gemma-vllm
+      - whisper-asr
+      - ai4bharat-asr
+      - kokoro-tts
+      - mms-tamil-tts
+    restart: unless-stopped
